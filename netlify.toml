@@ -1,0 +1,8 @@
+[build]
+  base = "."
+  publish = "yearious/dist"
+  command = "npm --prefix yearious ci && npm --prefix yearious run build"
+
+[context.production.environment]
+# Example: set NODE_ENV here if needed
+NODE_ENV = "production"

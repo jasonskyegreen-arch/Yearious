@@ -1,0 +1,11 @@
+{
+  "name": "yearious-workspace",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "npm --prefix yearious run dev",
+    "build": "npm --prefix yearious run build",
+    "preview": "npm --prefix yearious run preview",
+    "vercel-build": "npm --prefix yearious run build"
+  }
+}

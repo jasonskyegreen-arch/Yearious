@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light dark; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(180deg, #090f1d 0%, #111827 100%);
+  color: #f8fafc;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}

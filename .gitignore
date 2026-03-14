@@ -1,0 +1,9 @@
+node_modules/
+yearious/node_modules/
+dist/
+**/dist/
+*.log
+/.idea
+.vscode
+package-lock.json
+.DS_Store
