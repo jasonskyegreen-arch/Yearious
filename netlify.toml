@@ -1,7 +1,7 @@
 [build]
   base = "."
   publish = "yearious/dist"
-  command = "npm --prefix yearious ci --include=dev && npm --prefix yearious run build"
+  command = "npm --prefix yearious install && npm --prefix yearious run build"
 
 [build.environment]
   NODE_VERSION = "20"
