@@ -4,14 +4,100 @@
 
 :root { color-scheme: light dark; }
 html, body, #root { height: 100%; }
+html {
+  overflow-x: hidden;
+}
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: linear-gradient(180deg, #090f1d 0%, #111827 100%);
   color: #f8fafc;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 button {
   font: inherit;
   color: inherit;
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 1;
+}
+
+/* Whereious: no "Map data not yet available" text — show plain gray where tiles are missing */
+.leaflet-tile-pane .leaflet-tile {
+  background: #e5e7eb;
+}
+.leaflet-tile-pane .leaflet-tile img {
+  background: #e5e7eb;
+}
+/* Hide broken/error tiles so they show as nothing (pane background shows through) */
+.leaflet-tile-pane .leaflet-tile.leaflet-tile-error {
+  visibility: hidden;
+}
+
+/* When viewport is short and vertical scroll would be needed, categories become a single horizontal scroll row (Yearious + Whereious) */
+@media (max-height: 768px) {
+  .categories-row-if-tight {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    gap: 0.5rem;
+  }
+  .categories-row-if-tight > * {
+    flex: 0 0 auto !important;
+    min-width: 5rem;
+  }
+}
+
+/* Safe area for notched devices (Whereious bottom panel, etc.) */
+.whereious-panel-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+.whereious-header-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Whereious: on mobile, panel height is draggable (20–60% of screen); uses --whereious-panel-dvh */
+@media (max-width: 1023px) {
+  .whereious-panel-mobile {
+    height: auto;
+    max-height: calc(100dvh * (var(--whereious-panel-dvh, 42) / 100));
+  }
+  .whereious-panel-inner {
+    flex: none !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: calc(100dvh * (var(--whereious-panel-dvh, 42) / 100));
+  }
+}
+
+/* Whereious: prevent touch scroll from propagating to map when scrolling the panel */
+.whereious-panel-scroll {
+  touch-action: pan-y;
+}
+
+/* Whereious: resizable side panel on desktop (lg+) – width from --whereious-panel-width */
+@media (min-width: 1024px) {
+  .whereious-header-dynamic-right {
+    right: var(--whereious-panel-width, 400px);
+  }
+  .whereious-panel-dynamic-width {
+    width: var(--whereious-panel-width, 400px);
+  }
 }
