@@ -993,7 +993,7 @@ export function Yearious({ onBack }) {
                     <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>History · Tutorial</span>
                   </div>
                   <div className="mb-4 sm:mb-5 text-center text-xl sm:text-2xl font-semibold leading-snug">
-                    When did the Berlin Wall fall?
+                    When did the first moon landing take place?
                   </div>
                   {/* Example guess row — "1995" vs 1989 */}
                   <div className="flex justify-center mb-4">
