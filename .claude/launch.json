@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Yearious Dev Server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/start-dev.mjs", "--port", "5173"],
+      "port": 5173
+    },
+    {
+      "name": "Yearious Preview Server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "yearious", "run", "preview"],
+      "port": 4173
+    }
+  ]
+}

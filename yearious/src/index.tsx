@@ -305,6 +305,86 @@ function CategoryGridModal({ category, events, solvedKeys, onClose, onPick, them
   );
 }
 
+// ===================== Tutorial Overlays =====================
+function YeariousTutorial({ onClose, theme }) {
+  const isLight = theme === "light";
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${isLight ? "bg-white text-zinc-900" : "bg-zinc-900 text-zinc-100 border border-zinc-700"}`}>
+        <div className={`px-5 py-4 ${isLight ? "bg-emerald-50 border-b border-emerald-200" : "bg-emerald-950/40 border-b border-emerald-800/40"}`}>
+          <div className="text-2xl mb-1">📅</div>
+          <h2 className="text-xl font-extrabold">Welcome to Yearious!</h2>
+          <p className={`text-sm mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Guess the year of historical events in 4 tries.</p>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-sm font-semibold">Type a 4-digit year and press Enter. Each tile flips to show a hint:</p>
+          <div className="flex gap-3 my-1">
+            {[
+              { d: "1", bg: "#22c55e", text: "#fff", hint: "Right digit, right place" },
+              { d: "9", bg: "#facc15", text: "#111", hint: "Digit is too low" },
+              { d: "8", bg: "#f97316", text: "#fff", hint: "Digit is too high" },
+            ].map(({ d, bg, text, hint }) => (
+              <div key={d} className="flex-1 text-center">
+                <div className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center font-extrabold text-lg mb-1.5" style={{ background: bg, color: text }}>{d}</div>
+                <span className={`text-[10px] font-medium leading-tight block ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{hint}</span>
+              </div>
+            ))}
+          </div>
+          <div className={`rounded-xl p-3 text-xs ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-700" : "bg-zinc-800/50 border border-zinc-700 text-zinc-300"}`}>
+            Try <strong>Classic</strong> to start. Switch to <strong>Advanced</strong> or <strong>Expert</strong> for a bigger challenge — no high/low hints!
+          </div>
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={onClose} className="w-full rounded-xl py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/25 active:scale-95">
+            Start Playing!
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function WhereiousTutorial({ onClose, theme }) {
+  const isLight = theme === "light";
+  const steps = [
+    { icon: "📖", title: "Read the question", desc: "A historical event is shown at the top. Figure out where in the world it took place." },
+    { icon: "📍", title: "Click the map", desc: "Click anywhere on the map to drop your pin. Click again to move it." },
+    { icon: "✅", title: "Submit your guess", desc: "Press Enter or hit Submit to reveal how close you were. Up to 5,000 points per round!" },
+  ];
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${isLight ? "bg-white text-zinc-900" : "bg-[#14181f] text-zinc-100 border border-blue-500/10"}`}>
+        <div className={`px-5 py-4 ${isLight ? "bg-blue-50 border-b border-blue-200" : "bg-blue-950/40 border-b border-blue-800/40"}`}>
+          <div className="text-2xl mb-1">🌍</div>
+          <h2 className="text-xl font-extrabold">Welcome to Whereious!</h2>
+          <p className={`text-sm mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Guess where in the world historical events happened.</p>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          {steps.map(({ icon, title, desc }) => (
+            <div key={title} className="flex gap-3 items-start">
+              <span className="text-xl flex-shrink-0 mt-0.5">{icon}</span>
+              <div>
+                <div className="font-semibold text-sm">{title}</div>
+                <div className={`text-xs mt-0.5 leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
+              </div>
+            </div>
+          ))}
+          <div className={`rounded-xl p-3 text-xs mt-1 ${isLight ? "bg-blue-50 border border-blue-200 text-blue-800" : "bg-blue-950/30 border border-blue-700/30 text-blue-300"}`}>
+            🏆 Score over 4,000 points to keep your streak alive!
+          </div>
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={onClose} className="w-full rounded-xl py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-base transition-all shadow-lg shadow-blue-500/25 active:scale-95">
+            Let's Explore! 🗺️
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export function Yearious({ onBack }) {
   // ====== Category selection ======
   const categories = ["music", "movies", "tech", "sports", "history", "inventions", "math", "animals", "architecture", "people"];
@@ -351,6 +431,15 @@ export function Yearious({ onBack }) {
   const [message, setMessage] = useState("");
   const [revealInfo, setRevealInfo] = useState("");
   const [revealing, setRevealing] = useState(false); // true while the latest row is flipping
+
+  // ====== Tutorial (first visit) ======
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return !localStorage.getItem("yg_tutorialSeen"); } catch { return false; }
+  });
+  function dismissTutorial() {
+    try { localStorage.setItem("yg_tutorialSeen", "1"); } catch {}
+    setShowTutorial(false);
+  }
 
   // ====== Modals ======
   const [showHowTo, setShowHowTo] = useState(false);
@@ -1050,6 +1139,9 @@ export function Yearious({ onBack }) {
           isAdvanced={isAdvanced}
         />
       )}
+
+      {/* First-timer tutorial */}
+      {showTutorial && <YeariousTutorial onClose={dismissTutorial} theme={theme} />}
     </div>
   );
 }
@@ -1279,6 +1371,14 @@ function Whereious({ onBack }) {
     try { return localStorage.getItem("whereious_hasSubmittedBefore") === "1"; } catch { return false; }
   });
 
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try { return !localStorage.getItem("whereious_tutorialSeen"); } catch { return false; }
+  });
+  function dismissTutorial() {
+    try { localStorage.setItem("whereious_tutorialSeen", "1"); } catch {}
+    setShowTutorial(false);
+  }
+
   const [last10Answered, setLast10Answered] = useState(() => {
     try { const a = JSON.parse(localStorage.getItem("whereious_last10Answered") || "[]"); return Array.isArray(a) ? a.slice(0, 10) : []; } catch { return []; }
   });
@@ -1336,6 +1436,20 @@ function Whereious({ onBack }) {
   });
   useEffect(() => { try { localStorage.setItem("yg_theme", theme); } catch {} }, [theme]);
   const isLight = theme === "light";
+
+  // ====== Enter key: submit guess or advance to next question ======
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key !== "Enter") return;
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (e.target?.isContentEditable || ["input", "textarea", "select"].includes(tag)) return;
+      if (showTutorial || showHowTo || showSettings || gridCategory) return;
+      if (showAnswer) { newGame(); }
+      else if (guess) { submitGuess(); }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showAnswer, guess, puzzle, showTutorial, showHowTo, showSettings, gridCategory]);
 
   const ghostBtn = isLight ? "bg-transparent border border-zinc-300 hover:bg-blue-50 text-zinc-700" : "bg-transparent border border-zinc-700 hover:bg-blue-900/20 text-zinc-300";
   const primaryBtn = "bg-blue-600 hover:bg-blue-500 text-white";
@@ -1803,6 +1917,9 @@ function Whereious({ onBack }) {
       {gridCategory && (
         <WhereiousGridModal category={gridCategory} events={categoryEvents[gridCategory] || []} solvedData={solvedQuestions} onClose={() => setGridCategory(null)} onPick={chooseSpecificEvent} theme={theme} />
       )}
+
+      {/* First-timer tutorial */}
+      {showTutorial && <WhereiousTutorial onClose={dismissTutorial} theme={theme} />}
     </div>
   );
 }

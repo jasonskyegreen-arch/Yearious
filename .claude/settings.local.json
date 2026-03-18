@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm:*)",
+      "Bash(where node:*)",
+      "Bash(where npx:*)",
+      "Read(//c/Program Files/nodejs//**)",
+      "Bash(ls \"C:\\\\Users\\\\jason\\\\OneDrive\\\\Desktop\\\\coding\\\\Yearious-main\\\\.claude\\\\worktrees\\\\nervous-hopper\\\\yearious\\\\node_modules\\\\.bin\\\\vite\"*)",
+      "Bash(npm --prefix yearious install)"
+    ]
+  }
+}
