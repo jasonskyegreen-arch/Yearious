@@ -476,23 +476,12 @@ export function Yearious({ onBack }) {
     setShowTutorial(false);
   }
 
-  // ====== Tutorial mini-game state ======
-  const TUT_TARGET = "1969";
-  const [tutGuesses, setTutGuesses] = useState([]);
-  const [tutPatterns, setTutPatterns] = useState([]);
-  const [tutInput, setTutInput] = useState(["", "", "", ""]);
-  const [tutCursor, setTutCursor] = useState(0);
-  const [tutStatus, setTutStatus] = useState("playing");
-  const [tutRevealing, setTutRevealing] = useState(false);
+  // ====== Tutorial state ======
   const [tutShowModes, setTutShowModes] = useState(false);
 
-  // Reset tutorial state whenever tutorial opens
+  // Reset tutorial step whenever tutorial opens
   useEffect(() => {
-    if (showTutorial) {
-      setTutGuesses([]); setTutPatterns([]);
-      setTutInput(["", "", "", ""]); setTutCursor(0);
-      setTutStatus("playing"); setTutRevealing(false); setTutShowModes(false);
-    }
+    if (showTutorial) setTutShowModes(false);
   }, [showTutorial]);
 
   // ====== Modals ======
@@ -767,69 +756,6 @@ export function Yearious({ onBack }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isMobile, status, puzzle, revealing, cursor, inputArr, showTutorial]);
 
-  // Tutorial keyboard handler (capture phase — intercepts before the game handler)
-  useEffect(() => {
-    if (!showTutorial || tutShowModes || tutStatus !== "playing" || tutRevealing) return;
-    function onTutKey(e) {
-      e.stopImmediatePropagation();
-      if (/^[0-9]$/.test(e.key)) {
-        e.preventDefault();
-        setTutInput(arr => { const next = [...arr]; next[tutCursor] = e.key; return next; });
-        setTutCursor(c => Math.min(c + 1, 3));
-      } else if (e.key === "Backspace") {
-        e.preventDefault();
-        setTutInput(arr => {
-          const next = [...arr];
-          if (next[tutCursor]) { next[tutCursor] = ""; }
-          else if (tutCursor > 0) { next[tutCursor - 1] = ""; }
-          return next;
-        });
-        setTutCursor(c => (tutInput[c] ? c : Math.max(0, c - 1)));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        handleTutSubmit();
-      }
-    }
-    window.addEventListener("keydown", onTutKey, { capture: true });
-    return () => window.removeEventListener("keydown", onTutKey, { capture: true });
-  }, [showTutorial, tutShowModes, tutStatus, tutRevealing, tutCursor, tutInput]);
-
-  function handleTutDigit(d) {
-    if (tutStatus !== "playing" || tutRevealing) return;
-    setTutInput(arr => { const next = [...arr]; next[tutCursor] = d; return next; });
-    setTutCursor(c => Math.min(c + 1, 3));
-  }
-  function handleTutBackspace() {
-    if (tutStatus !== "playing" || tutRevealing) return;
-    setTutInput(arr => {
-      const next = [...arr];
-      if (next[tutCursor]) { next[tutCursor] = ""; }
-      else if (tutCursor > 0) { next[tutCursor - 1] = ""; }
-      return next;
-    });
-    setTutCursor(c => (tutInput[c] ? c : Math.max(0, c - 1)));
-  }
-  function handleTutSubmit() {
-    const guessStr = tutInput.join("");
-    if (tutRevealing || tutStatus !== "playing" || guessStr.length !== 4 || !/^\d{4}$/.test(guessStr)) return;
-    const pattern = scoreGuess(guessStr, TUT_TARGET, gameMode);
-    const newGuesses = [...tutGuesses, guessStr];
-    const newPatterns = [...tutPatterns, pattern];
-    setTutGuesses(newGuesses);
-    setTutPatterns(newPatterns);
-    setTutInput(["", "", "", ""]);
-    setTutCursor(0);
-    setTutRevealing(true);
-    const totalMs = Math.round((0.8 + 0.2 * 3) * 1000) + 100;
-    setTimeout(() => {
-      setTutRevealing(false);
-      const won = guessStr === TUT_TARGET;
-      const lost = !won && newGuesses.length >= 4;
-      if (won) setTutStatus("won");
-      else if (lost) setTutStatus("lost");
-    }, totalMs);
-  }
-
   const len = puzzle?.year?.length ?? 4;
   const inputStr = (inputArr || []).map(ch => ch || "").join(""); // for validation/submit (no spaces)
   const inputDisplayStr = (inputArr || []).map(ch => (ch === "" ? " " : ch)).join(""); // keep visual gaps for active row
@@ -1058,189 +984,103 @@ export function Yearious({ onBack }) {
           className={cardClass}
         >
           {showTutorial ? (
-            /* ── Tutorial: integrated into the main game card ── */
+            /* ── Tutorial: colour guide + (Classic only) mode comparison ── */
             <>
               {!tutShowModes ? (
-                /* Step 0: Play a round against 1969 */
+                /* Step 0: What the colors mean */
                 <>
                   <div className="mb-1 text-center">
                     <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>History · Tutorial</span>
                   </div>
                   <div className="mb-4 sm:mb-5 text-center text-xl sm:text-2xl font-semibold leading-snug">
-                    When did the first moon landing take place?
+                    When did the Berlin Wall fall?
                   </div>
-
-                  <AnimatePresence>
-                    {tutStatus === "playing" && tutGuesses.length === 0 && !tutRevealing && (
-                      <motion.p key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className={`mb-2 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                        Type a 4-digit year and press ↵ to guess
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Real 4-row board using GuessRow */}
-                  <div className="my-5 sm:my-6">
-                    {Array.from({ length: 4 }, (_, row) => {
-                      const isActiveRow = row === tutGuesses.length && tutStatus === "playing" && !tutRevealing;
-                      const hasPattern = !!tutPatterns[row];
-                      const revealMode = hasPattern && row === tutGuesses.length - 1 ? "stagger" : hasPattern ? "instant" : "none";
-                      const tutDisplayStr = tutInput.map(ch => ch || " ").join("");
-                      return (
-                        <div key={row} className="flex justify-center">
-                          <GuessRow
-                            guess={tutGuesses[row] ?? (isActiveRow ? tutDisplayStr : "")}
-                            pattern={tutPatterns[row]}
-                            length={4}
-                            activeIndex={isActiveRow ? tutCursor : -1}
-                            setActiveIndex={(i) => { if (isActiveRow) setTutCursor(i); }}
-                            active={isActiveRow}
-                            theme={theme}
-                            revealMode={revealMode}
-                            isExpert={isExpert}
-                            isAdvanced={isAdvanced}
-                          />
-                        </div>
-                      );
-                    })}
+                  {/* Example guess row — "1995" vs 1989 */}
+                  <div className="flex justify-center mb-4">
+                    <GuessRow
+                      guess="1995"
+                      pattern={isAdvanced ? ["green","green","wrong_position","wrong"] : isExpert ? ["green","green","wrong","wrong"] : ["green","green","high","low"]}
+                      length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                      theme={theme} revealMode="instant" isExpert={isExpert} isAdvanced={isAdvanced}
+                    />
                   </div>
-
-                  {/* Color legend — appears inline after first reveal */}
-                  <AnimatePresence>
-                    {tutGuesses.length > 0 && !tutRevealing && (
-                      <motion.div key="legend" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className={`mb-4 rounded-xl p-3 ${isLight ? "bg-zinc-50 border border-zinc-200" : "bg-zinc-800/40 border border-zinc-700/60"}`}>
-                        <p className={`text-[10px] uppercase tracking-wider font-semibold mb-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>What the colors mean</p>
-                        <div className="space-y-1.5">
-                          {tutColorLegend.map(({ bg, text, label, desc, dashed }) => (
-                            <div key={label} className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-sm"
-                                style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>7</div>
-                              <div>
-                                <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg }}>{label}</span>
-                                <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
-                              </div>
-                            </div>
-                          ))}
+                  {/* Color legend */}
+                  <div className={`rounded-xl p-3 mb-4 ${isLight ? "bg-zinc-50 border border-zinc-200" : "bg-zinc-800/40 border border-zinc-700/60"}`}>
+                    <p className={`text-[10px] uppercase tracking-wider font-semibold mb-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>What the colors mean</p>
+                    <div className="space-y-1.5">
+                      {tutColorLegend.map(({ bg, text, label, desc, dashed }) => (
+                        <div key={label} className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-sm"
+                            style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>7</div>
+                          <div>
+                            <span className="font-semibold text-sm"
+                              style={{ color: bg === "#0a0a0a" ? "#f59e0b" : (dashed ? (isLight ? "#0f766e" : "#5eead4") : bg) }}>{label}</span>
+                            <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+                          </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Result messages */}
-                  {tutStatus === "won" && (
-                    <p className={`text-center text-sm font-bold mb-3 ${isLight ? "text-emerald-600" : "text-emerald-400"}`}>🎉 You got it!</p>
-                  )}
-                  {tutStatus === "lost" && (
-                    <p className={`text-center text-sm font-semibold mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
-                      The answer was <strong style={{ color: accentColor }}>1969</strong>
-                    </p>
-                  )}
-
-                  {/* Show keypad on mobile only */}
-                  {isMobile && tutStatus === "playing" && (
-                    <MobileKeyboard onDigit={handleTutDigit} onBackspace={handleTutBackspace} onEnter={handleTutSubmit} theme={theme} />
-                  )}
-
-                  {/* After round ends — see the modes */}
-                  {tutStatus !== "playing" && !tutRevealing && (
-                    <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      onClick={() => setTutShowModes(true)}
-                      className={`mt-3 w-full rounded-xl py-2.5 text-sm font-bold ${accentBtnClass}`}>
-                      See the modes →
-                    </motion.button>
-                  )}
-
-                  {/* Skip — only before first guess */}
-                  {tutStatus === "playing" && !tutRevealing && tutGuesses.length === 0 && (
-                    <button onClick={() => setTutShowModes(true)}
-                      className={`mt-2 w-full text-xs py-1 rounded-lg ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}>
-                      Skip →
+                      ))}
+                    </div>
+                  </div>
+                  {/* Classic gets "see other modes"; Advanced/Expert go straight to Start */}
+                  {!isAdvanced && !isExpert ? (
+                    <>
+                      <button onClick={() => setTutShowModes(true)}
+                        className={`w-full rounded-xl py-2.5 text-sm font-bold mb-2 ${accentBtnClass}`}>
+                        See other modes →
+                      </button>
+                      <button onClick={dismissTutorial}
+                        className={`w-full text-xs py-1 rounded-lg ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}>
+                        Skip →
+                      </button>
+                    </>
+                  ) : (
+                    <button onClick={dismissTutorial}
+                      className={`w-full rounded-xl py-2.5 text-base font-bold transition-all ${accentBtnClass}`}>
+                      Start Playing!
                     </button>
                   )}
                 </>
               ) : (
-                /* Step 1: Mode-specific guide */
+                /* Step 1 (Classic only): Other modes with real coloured example rows */
                 <>
-                  {isAdvanced ? (
-                    /* Advanced: teach the positional hint mechanic */
-                    <>
-                      <p className={`font-bold text-base mb-1 ${isLight ? "text-indigo-700" : "text-indigo-300"}`}>Advanced Mode</p>
-                      <p className={`text-sm mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
-                        No high/low hints — instead you get positional clues about each digit:
-                      </p>
-                      <div className="space-y-2.5 mb-4">
-                        {[
-                          { bg: "#14b8a6", text: "#fff", label: "Teal", desc: "Right digit, right position — perfect!" },
-                          { bg: isLight ? "#ccfbf1" : "#134e4a", text: isLight ? "#0f766e" : "#5eead4", label: "Teal dashed", desc: "Right digit, but in the wrong position — rearrange it!", dashed: true },
-                          { bg: "#374151", text: "#9ca3af", label: "Gray", desc: "This digit is not in the year at all." },
-                        ].map(({ bg, text, label, desc, dashed }) => (
-                          <div key={label} className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-base"
-                              style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>6</div>
-                            <div>
-                              <span className="font-semibold text-sm" style={{ color: bg === "#374151" ? "#9ca3af" : bg }}>{label}</span>
-                              <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className={`rounded-xl p-3 text-xs mb-4 ${isLight ? "bg-indigo-50 border border-indigo-200 text-indigo-700" : "bg-indigo-950/40 border border-indigo-800/40 text-indigo-300"}`}>
-                        💡 A teal-dashed digit appears somewhere in the year — try it in a different position next guess!
-                      </div>
-                    </>
-                  ) : isExpert ? (
-                    /* Expert: teach the no-hints deduction approach */
-                    <>
-                      <p className={`font-bold text-base mb-1 ${isLight ? "text-amber-700" : "text-amber-400"}`}>Expert Mode</p>
-                      <p className={`text-sm mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
-                        Only two colors — no high, no low, no position hints. Pure deduction.
-                      </p>
-                      <div className="space-y-2.5 mb-4">
-                        {[
-                          { bg: "#f59e0b", text: "#000", label: "Gold", desc: "Correct digit in the correct position." },
-                          { bg: "#0a0a0a", text: "#fbbf24", label: "Black", desc: "Wrong digit — that number is not in this position." },
-                        ].map(({ bg, text, label, desc }) => (
-                          <div key={label} className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-base"
-                              style={{ background: bg, color: text }}>9</div>
-                            <div>
-                              <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg }}>{label}</span>
-                              <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className={`rounded-xl p-3 text-xs mb-4 ${isLight ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-amber-950/40 border border-amber-800/40 text-amber-300"}`}>
-                        💡 Strategy: start with a round number like 1900 or 2000 to lock in the century, then narrow down each digit.
-                      </div>
-                    </>
-                  ) : (
-                    /* Classic: mode comparison */
-                    <>
-                      <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Want more challenge? Switch modes anytime with the toggle at the top:</p>
-                      <div className="space-y-2.5 mb-4">
-                        {[
-                          { name: "Classic", color: "#22c55e", desc: "Green = right place, Yellow = too low, Orange = too high. Directional hints every guess." },
-                          { name: "Advanced", color: "#6366f1", desc: "Teal = exact, dashed = right digit wrong place, gray = not in year. No high/low hints." },
-                          { name: "Expert", color: "#f59e0b", desc: "Gold = correct, Black = wrong. No hints at all — pure deduction!" },
-                        ].map(({ name, color, desc }) => (
-                          <div key={name} className={`rounded-xl p-3 border ${
-                            gameMode === name.toLowerCase()
-                              ? (isLight ? "border-zinc-400 bg-zinc-50" : "border-zinc-500 bg-zinc-800/60")
-                              : (isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800/40")
-                          }`}>
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                              <div className="font-bold text-sm" style={{ color }}>{name}</div>
-                              {gameMode === name.toLowerCase() && <span className={`text-[10px] ml-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>(current)</span>}
-                            </div>
-                            <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                    The same guess gives different info in each mode. Switch anytime with the toggle at the top:
+                  </p>
+                  {/* Advanced example */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#6366f1" }} />
+                      <span className="font-bold text-sm" style={{ color: "#6366f1" }}>Advanced</span>
+                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>positional hints, no high/low</span>
+                    </div>
+                    <div className="flex justify-center mb-1.5">
+                      <GuessRow guess="1995" pattern={["green","green","wrong_position","wrong"]}
+                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                        theme={theme} revealMode="instant" isExpert={false} isAdvanced={true} />
+                    </div>
+                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      <span style={{ color: "#14b8a6" }}>Teal = right place</span>
+                      <span style={{ color: isLight ? "#0f766e" : "#5eead4" }}>Dashed = right digit, wrong place</span>
+                      <span>Gray = not in year</span>
+                    </div>
+                  </div>
+                  {/* Expert example */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#f59e0b" }} />
+                      <span className="font-bold text-sm" style={{ color: "#f59e0b" }}>Expert</span>
+                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>no hints at all — pure deduction</span>
+                    </div>
+                    <div className="flex justify-center mb-1.5">
+                      <GuessRow guess="1995" pattern={["green","green","wrong","wrong"]}
+                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                        theme={theme} revealMode="instant" isExpert={true} isAdvanced={false} />
+                    </div>
+                    <div className={`flex gap-3 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      <span style={{ color: "#f59e0b" }}>Gold = correct</span>
+                      <span>Black = wrong</span>
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={() => setTutShowModes(false)}
                       className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
