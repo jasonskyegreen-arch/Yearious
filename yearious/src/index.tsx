@@ -306,39 +306,144 @@ function CategoryGridModal({ category, events, solvedKeys, onClose, onPick, them
 }
 
 // ===================== Tutorial Overlays =====================
-function YeariousTutorial({ onClose, theme }) {
+function YeariousTutorial({ onClose, theme, mode = "classic" }) {
+  const [step, setStep] = useState(0);
   const isLight = theme === "light";
+  const isExpert = mode === "expert";
+  const isAdvanced = mode === "advanced";
+  const accentColor = isExpert ? "#f59e0b" : isAdvanced ? "#6366f1" : "#22c55e";
+  const accentBtnClass = isExpert
+    ? "bg-amber-500 hover:bg-amber-400 text-black"
+    : isAdvanced
+      ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+      : "bg-emerald-600 hover:bg-emerald-500 text-white";
+  const headerClass = isExpert
+    ? (isLight ? "bg-amber-50 border-b border-amber-200" : "bg-amber-950/40 border-b border-amber-800/40")
+    : isAdvanced
+      ? (isLight ? "bg-indigo-50 border-b border-indigo-200" : "bg-indigo-950/40 border-b border-indigo-800/40")
+      : (isLight ? "bg-emerald-50 border-b border-emerald-200" : "bg-emerald-950/40 border-b border-emerald-800/40");
+  const totalSteps = 3;
+  const modeTitle = isExpert ? "Expert Mode" : isAdvanced ? "Advanced Mode" : "Welcome to Yearious!";
+  const modeSubtitle = isExpert
+    ? "No hints — gold = correct, black = wrong. Can you crack the year?"
+    : isAdvanced
+      ? "No high/low hints. Use the digit positions to crack the year!"
+      : "Guess the 4-digit year of historical events in 4 tries.";
+
+  const colorRows = isExpert
+    ? [
+        { bg: "#f59e0b", text: "#000", label: "Gold", desc: "Correct digit, correct position" },
+        { bg: "#0a0a0a", text: "#fbbf24", label: "Black", desc: "Wrong digit — no further hints" },
+      ]
+    : isAdvanced
+      ? [
+          { bg: "#14b8a6", text: "#fff", label: "Teal", desc: "Right digit, right position" },
+          { bg: "#134e4a", text: "#5eead4", label: "Teal dashed", desc: "Right digit, wrong position", dashed: true },
+          { bg: "#374151", text: "#9ca3af", label: "Gray", desc: "Digit not in the year" },
+        ]
+      : [
+          { bg: "#22c55e", text: "#fff", label: "Green", desc: "Right digit, right position" },
+          { bg: "#facc15", text: "#111", label: "Yellow", desc: "Digit is too low — guess higher" },
+          { bg: "#f97316", text: "#fff", label: "Orange", desc: "Digit is too high — guess lower" },
+        ];
+
+  const stepContent = [
+    // Step 0 — Welcome
+    <div key="s0" className="space-y-4">
+      <p className={`text-sm leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>{modeSubtitle}</p>
+      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
+        <div className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Example question</div>
+        <div className={`font-semibold text-sm ${isLight ? "text-zinc-800" : "text-zinc-200"}`}>When did the first moon landing take place?</div>
+      </div>
+      <div className="flex justify-center gap-2">
+        {["1", "9", "6", "9"].map((d, i) => (
+          <div key={i} className="w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-lg"
+            style={{ background: isLight ? "#e5e7eb" : "#27272a", color: isLight ? "#111827" : "#ffffff", border: `1px solid ${isLight ? "#d1d5db" : "#3f3f46"}` }}>{d}</div>
+        ))}
+      </div>
+      <p className={`text-xs text-center ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Type a year, press Enter — tiles flip to reveal hints</p>
+    </div>,
+    // Step 1 — Colors
+    <div key="s1" className="space-y-3">
+      <p className={`text-sm ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>After each guess, every tile reveals a hint:</p>
+      <div className="space-y-2.5">
+        {colorRows.map(({ bg, text, label, desc, dashed }) => (
+          <div key={label} className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-extrabold text-base"
+              style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>7</div>
+            <div>
+              <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg === "#134e4a" ? "#5eead4" : bg }}>{label}</span>
+              <span className={`text-xs ml-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      {!isExpert && (
+        <div className={`rounded-xl p-3 text-xs mt-1 ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-600" : "bg-zinc-800/40 border border-zinc-700 text-zinc-400"}`}>
+          {isAdvanced ? "💡 Think like a code-breaker — use positions, not directions!" : "💡 Use yellow/orange to narrow down each digit one by one!"}
+        </div>
+      )}
+    </div>,
+    // Step 2 — Controls
+    <div key="s2" className="space-y-3">
+      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
+        <div className="font-semibold text-sm mb-1">⌨️ Desktop</div>
+        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Type digits, use arrow keys to move between tiles. Press <strong>Enter</strong> to submit.</div>
+      </div>
+      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
+        <div className="font-semibold text-sm mb-1">📱 Mobile</div>
+        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Use the on-screen keypad. Tap a tile to move the cursor. Tap ↵ to submit.</div>
+      </div>
+      <div className={`rounded-xl p-3 text-xs ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-600" : "bg-zinc-800/40 border border-zinc-700 text-zinc-300"}`}>
+        💡 Switch between <strong>Classic</strong>, <strong>Advanced</strong>, and <strong>Expert</strong> anytime with the toggle at the top!
+      </div>
+    </div>,
+  ];
+
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${isLight ? "bg-white text-zinc-900" : "bg-zinc-900 text-zinc-100 border border-zinc-700"}`}>
-        <div className={`px-5 py-4 ${isLight ? "bg-emerald-50 border-b border-emerald-200" : "bg-emerald-950/40 border-b border-emerald-800/40"}`}>
-          <div className="text-2xl mb-1">📅</div>
-          <h2 className="text-xl font-extrabold">Welcome to Yearious!</h2>
-          <p className={`text-sm mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Guess the year of historical events in 4 tries.</p>
-        </div>
-        <div className="px-5 py-4 space-y-4">
-          <p className="text-sm font-semibold">Type a 4-digit year and press Enter. Each tile flips to show a hint:</p>
-          <div className="flex gap-3 my-1">
-            {[
-              { d: "1", bg: "#22c55e", text: "#fff", hint: "Right digit, right place" },
-              { d: "9", bg: "#facc15", text: "#111", hint: "Digit is too low" },
-              { d: "8", bg: "#f97316", text: "#fff", hint: "Digit is too high" },
-            ].map(({ d, bg, text, hint }) => (
-              <div key={d} className="flex-1 text-center">
-                <div className="w-12 h-12 mx-auto rounded-xl flex items-center justify-center font-extrabold text-lg mb-1.5" style={{ background: bg, color: text }}>{d}</div>
-                <span className={`text-[10px] font-medium leading-tight block ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{hint}</span>
-              </div>
-            ))}
-          </div>
-          <div className={`rounded-xl p-3 text-xs ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-700" : "bg-zinc-800/50 border border-zinc-700 text-zinc-300"}`}>
-            Try <strong>Classic</strong> to start. Switch to <strong>Advanced</strong> or <strong>Expert</strong> for a bigger challenge — no high/low hints!
+        <div className={`px-5 py-4 ${headerClass}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl mb-0.5">📅</div>
+              <h2 className="text-lg font-extrabold">{modeTitle}</h2>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              {Array.from({ length: totalSteps }, (_, i) => (
+                <button key={i} onClick={() => setStep(i)}
+                  className="w-2 h-2 rounded-full transition-all"
+                  style={{ background: i === step ? accentColor : (isLight ? "#d1d5db" : "#52525b"), transform: i === step ? "scale(1.3)" : "scale(1)" }} />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="px-5 pb-5">
-          <button onClick={onClose} className="w-full rounded-xl py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/25 active:scale-95">
-            Start Playing!
-          </button>
+        <div className="px-5 py-4 min-h-[180px]">
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
+              {stepContent[step]}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          {step > 0 && (
+            <button onClick={() => setStep(s => s - 1)}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
+              ← Back
+            </button>
+          )}
+          {step < totalSteps - 1 ? (
+            <button onClick={() => setStep(s => s + 1)}
+              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-all ${accentBtnClass}`}>
+              Next →
+            </button>
+          ) : (
+            <button onClick={onClose}
+              className={`flex-1 rounded-xl py-3 text-base font-bold transition-all shadow-lg active:scale-95 ${accentBtnClass}`}>
+              Start Playing!
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
@@ -346,39 +451,111 @@ function YeariousTutorial({ onClose, theme }) {
 }
 
 function WhereiousTutorial({ onClose, theme }) {
+  const [step, setStep] = useState(0);
   const isLight = theme === "light";
-  const steps = [
-    { icon: "📖", title: "Read the question", desc: "A historical event is shown at the top. Figure out where in the world it took place." },
-    { icon: "📍", title: "Click the map", desc: "Click anywhere on the map to drop your pin. Click again to move it." },
-    { icon: "✅", title: "Submit your guess", desc: "Press Enter or hit Submit to reveal how close you were. Up to 5,000 points per round!" },
+  const totalSteps = 3;
+
+  const stepContent = [
+    // Step 0 — Welcome
+    <div key="w0" className="space-y-4">
+      <p className={`text-sm leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>
+        A historical event is shown at the top of the screen. Your job: pin it on the map!
+      </p>
+      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
+        <div className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Example question</div>
+        <div className={`font-semibold text-sm ${isLight ? "text-blue-700" : "text-blue-300"}`}>History</div>
+        <div className={`font-semibold text-sm mt-0.5 ${isLight ? "text-zinc-800" : "text-zinc-200"}`}>Where was the Battle of Waterloo fought?</div>
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <div className="text-3xl">🗺️</div>
+        <div className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>Click anywhere on the map to place your guess pin</div>
+      </div>
+    </div>,
+    // Step 1 — How to play
+    <div key="w1" className="space-y-3">
+      {[
+        { icon: "📖", num: "1", title: "Read the question", desc: "A historical event or landmark is shown — figure out where in the world it happened." },
+        { icon: "📍", num: "2", title: "Click the map", desc: "Click anywhere to drop your blue pin. Click again to move it. Zoom in for accuracy!" },
+        { icon: "⏎", num: "3", title: "Submit your guess", desc: "Press Enter or tap Submit. The green pin shows the real location with a line to yours." },
+      ].map(({ icon, num, title, desc }) => (
+        <div key={num} className="flex gap-3 items-start">
+          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/20 text-blue-400"}`}>{num}</div>
+          <div>
+            <div className="font-semibold text-sm">{title}</div>
+            <div className={`text-xs mt-0.5 leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>,
+    // Step 2 — Scoring
+    <div key="w2" className="space-y-3">
+      <p className={`text-sm ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Score up to <strong>5,000 points</strong> per round — the closer you are, the more you score!</p>
+      <div className="space-y-2">
+        {[
+          { score: "5,000", label: "Perfect hit", color: "#22c55e", desc: "Right on target" },
+          { score: "4,000+", label: "Streak lives!", color: "#f59e0b", desc: "Score this or higher to keep your streak" },
+          { score: "1,000", label: "Decent guess", color: "#f97316", desc: "You were in the right region" },
+          { score: "0", label: "Way off!", color: "#ef4444", desc: "Wrong continent — study your maps!" },
+        ].map(({ score, label, color, desc }) => (
+          <div key={score} className="flex items-center gap-3">
+            <div className="w-14 text-right font-extrabold text-sm tabular-nums" style={{ color }}>{score}</div>
+            <div>
+              <span className="font-semibold text-sm">{label}</span>
+              <span className={`text-xs ml-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className={`rounded-xl p-3 text-xs ${isLight ? "bg-blue-50 border border-blue-200 text-blue-800" : "bg-blue-950/30 border border-blue-700/30 text-blue-300"}`}>
+        🏆 Chain 4,000+ scores in a row to build an unbroken streak!
+      </div>
+    </div>,
   ];
+
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
         className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${isLight ? "bg-white text-zinc-900" : "bg-[#14181f] text-zinc-100 border border-blue-500/10"}`}>
         <div className={`px-5 py-4 ${isLight ? "bg-blue-50 border-b border-blue-200" : "bg-blue-950/40 border-b border-blue-800/40"}`}>
-          <div className="text-2xl mb-1">🌍</div>
-          <h2 className="text-xl font-extrabold">Welcome to Whereious!</h2>
-          <p className={`text-sm mt-1 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Guess where in the world historical events happened.</p>
-        </div>
-        <div className="px-5 py-4 space-y-3">
-          {steps.map(({ icon, title, desc }) => (
-            <div key={title} className="flex gap-3 items-start">
-              <span className="text-xl flex-shrink-0 mt-0.5">{icon}</span>
-              <div>
-                <div className="font-semibold text-sm">{title}</div>
-                <div className={`text-xs mt-0.5 leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl mb-0.5">🌍</div>
+              <h2 className="text-lg font-extrabold">Welcome to Whereious!</h2>
             </div>
-          ))}
-          <div className={`rounded-xl p-3 text-xs mt-1 ${isLight ? "bg-blue-50 border border-blue-200 text-blue-800" : "bg-blue-950/30 border border-blue-700/30 text-blue-300"}`}>
-            🏆 Score over 4,000 points to keep your streak alive!
+            <div className="flex gap-1.5 items-center">
+              {Array.from({ length: totalSteps }, (_, i) => (
+                <button key={i} onClick={() => setStep(i)}
+                  className="w-2 h-2 rounded-full transition-all"
+                  style={{ background: i === step ? "#3b82f6" : (isLight ? "#d1d5db" : "#52525b"), transform: i === step ? "scale(1.3)" : "scale(1)" }} />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="px-5 pb-5">
-          <button onClick={onClose} className="w-full rounded-xl py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-base transition-all shadow-lg shadow-blue-500/25 active:scale-95">
-            Let's Explore! 🗺️
-          </button>
+        <div className="px-5 py-4 min-h-[200px]">
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
+              {stepContent[step]}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          {step > 0 && (
+            <button onClick={() => setStep(s => s - 1)}
+              className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
+              ← Back
+            </button>
+          )}
+          {step < totalSteps - 1 ? (
+            <button onClick={() => setStep(s => s + 1)}
+              className="flex-1 rounded-xl py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all">
+              Next →
+            </button>
+          ) : (
+            <button onClick={onClose}
+              className="flex-1 rounded-xl py-3 text-base font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-500/25 active:scale-95">
+              Let's Explore! 🗺️
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
@@ -432,17 +609,17 @@ export function Yearious({ onBack }) {
   const [revealInfo, setRevealInfo] = useState("");
   const [revealing, setRevealing] = useState(false); // true while the latest row is flipping
 
-  // ====== Tutorial (first visit) ======
-  const [showTutorial, setShowTutorial] = useState(() => {
-    try { return !localStorage.getItem("yg_tutorialSeen"); } catch { return false; }
-  });
+  // ====== Tutorial (per-mode first visit) ======
+  function hasSeenModeTutorial(m) {
+    try { return !!localStorage.getItem(`yg_tutorialSeen_${m}`); } catch { return true; }
+  }
+  const [showTutorial, setShowTutorial] = useState(() => !hasSeenModeTutorial(gameMode));
   function dismissTutorial() {
-    try { localStorage.setItem("yg_tutorialSeen", "1"); } catch {}
+    try { localStorage.setItem(`yg_tutorialSeen_${gameMode}`, "1"); } catch {}
     setShowTutorial(false);
   }
 
   // ====== Modals ======
-  const [showHowTo, setShowHowTo] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [gridCategory, setGridCategory] = useState(null);
 
@@ -476,7 +653,10 @@ export function Yearious({ onBack }) {
     return saved === "auto" ? "dark" : saved;
   });
   useEffect(() => { try { localStorage.setItem("yg_theme", theme); } catch {} }, [theme]);
-  useEffect(() => { try { localStorage.setItem("yg_mode", gameMode); } catch {} }, [gameMode]);
+  useEffect(() => {
+    try { localStorage.setItem("yg_mode", gameMode); } catch {}
+    if (!hasSeenModeTutorial(gameMode)) setShowTutorial(true);
+  }, [gameMode]);
   const isLight = theme === "light";
   const isExpert = gameMode === "expert";
   const isAdvanced = gameMode === "advanced";
@@ -867,7 +1047,7 @@ export function Yearious({ onBack }) {
         {/* Action buttons row */}
         <div className="mb-4 md:mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowHowTo(true)} className={`rounded-xl sm:rounded-2xl px-4 sm:px-4 py-2.5 sm:py-2.5 ${ghostBtn} text-sm sm:text-sm font-semibold`} title="How to play">How To Play</button>
+            <button onClick={() => setShowTutorial(true)} className={`rounded-xl sm:rounded-2xl px-4 sm:px-4 py-2.5 sm:py-2.5 ${ghostBtn} text-sm sm:text-sm font-semibold`} title="How to play">How To Play</button>
             <button onClick={() => setShowSettings(true)} className={`rounded-xl sm:rounded-2xl px-4 sm:px-4 py-2.5 sm:py-2.5 ${ghostBtn} text-sm sm:text-sm font-semibold`} title="Settings">Settings</button>
           </div>
           <button
@@ -989,55 +1169,6 @@ export function Yearious({ onBack }) {
         </motion.div>
       </div>
 
-      {/* How To Play (modal) */}
-      {showHowTo && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-          <div className={`w-full max-w-md rounded-2xl p-5 border-2 ${
-            isExpert
-              ? (isLight ? "bg-amber-50 border-amber-300 text-zinc-900" : "bg-[#141210] border-amber-600/60 text-zinc-100")
-              : isAdvanced
-                ? (isLight ? "bg-indigo-50 border-indigo-300 text-zinc-900" : "bg-[#1e1b4b] border-indigo-500/60 text-zinc-100")
-                : (isLight ? "bg-white border-zinc-200 text-zinc-900" : "bg-zinc-900 border-zinc-600 text-zinc-100")
-          }`}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold">How to Play</h2>
-              <button onClick={() => setShowHowTo(false)} className={`px-2 py-1 rounded-lg ${
-                isExpert
-                  ? (isLight ? "bg-amber-200 hover:bg-amber-300 text-amber-900" : "bg-amber-900/50 hover:bg-amber-800/50 text-amber-200")
-                  : isAdvanced
-                    ? (isLight ? "bg-indigo-200 hover:bg-indigo-300 text-indigo-900" : "bg-indigo-900/50 hover:bg-indigo-800/50 text-indigo-200")
-                    : (isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-700" : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300")
-              }`}>✕</button>
-            </div>
-            <ul className="list-disc ml-5 space-y-2 text-sm opacity-95">
-              <li>Guess the <strong>year</strong> of the event. You have <strong>4 guesses</strong>.</li>
-              <li>Type digits in the tiles (desktop) or use the keypad (mobile). Press <strong>Enter</strong> to submit.</li>
-              <li className="pt-1 font-semibold">Tile colors depend on your mode:</li>
-              {gameMode === "classic" && (
-                <>
-                  <li><span className="text-green-500 font-semibold">Green</span> = correct digit, right place</li>
-                  <li><span className="text-yellow-400 font-semibold">Yellow</span> = digit too low</li>
-                  <li><span className="text-orange-500 font-semibold">Orange</span> = digit too high</li>
-                </>
-              )}
-              {gameMode === "advanced" && (
-                <>
-                  <li><span className="text-teal-500 font-semibold">Teal</span> = right digit, right place</li>
-                  <li><span className="text-teal-600 font-semibold">Teal dashed border</span> = digit is in the year but in another position</li>
-                  <li><span className={`font-semibold ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Gray</span> = digit not in the year</li>
-                </>
-              )}
-              {gameMode === "expert" && (
-                <>
-                  <li><span className="text-amber-400 font-semibold">Gold</span> = correct digit</li>
-                  <li><span className={`font-semibold ${isLight ? "text-zinc-900" : "text-zinc-300"}`}>Black</span> = wrong digit (no high/low hints)</li>
-                </>
-              )}
-            </ul>
-          </div>
-        </div>
-      )}
-
       {/* Settings */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -1140,8 +1271,8 @@ export function Yearious({ onBack }) {
         />
       )}
 
-      {/* First-timer tutorial */}
-      {showTutorial && <YeariousTutorial onClose={dismissTutorial} theme={theme} />}
+      {/* Tutorial (first-timer + How To Play) */}
+      {showTutorial && <YeariousTutorial onClose={dismissTutorial} theme={theme} mode={gameMode} />}
     </div>
   );
 }
@@ -1354,7 +1485,9 @@ function Whereious({ onBack }) {
   useEffect(() => { try { localStorage.setItem("whereious_solved", JSON.stringify(solvedQuestions)); } catch {} }, [solvedQuestions]);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [showHowTo, setShowHowTo] = useState(false);
+  // Refs so the Enter key handler always calls the latest version of these functions
+  const submitGuessRef = useRef(null);
+  const newGameRef = useRef(null);
   const [gridCategory, setGridCategory] = useState(null);
   const [statsTab, setStatsTab] = useState("questions"); // "questions" | "points"
   const [panelHeightPct, setPanelHeightPct] = useState(() => {
@@ -1443,13 +1576,13 @@ function Whereious({ onBack }) {
       if (e.key !== "Enter") return;
       const tag = (e.target?.tagName || "").toLowerCase();
       if (e.target?.isContentEditable || ["input", "textarea", "select"].includes(tag)) return;
-      if (showTutorial || showHowTo || showSettings || gridCategory) return;
-      if (showAnswer) { newGame(); }
-      else if (guess) { submitGuess(); }
+      if (showTutorial || showSettings || gridCategory) return;
+      if (showAnswer) { newGameRef.current?.(); }
+      else if (guess) { submitGuessRef.current?.(); }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showAnswer, guess, puzzle, showTutorial, showHowTo, showSettings, gridCategory]);
+  }, [showAnswer, guess, showTutorial, showSettings, gridCategory]);
 
   const ghostBtn = isLight ? "bg-transparent border border-zinc-300 hover:bg-blue-50 text-zinc-700" : "bg-transparent border border-zinc-700 hover:bg-blue-900/20 text-zinc-300";
   const primaryBtn = "bg-blue-600 hover:bg-blue-500 text-white";
@@ -1487,6 +1620,7 @@ function Whereious({ onBack }) {
     setLastScore(0);
     setLastDistance(0);
   };
+  newGameRef.current = newGame;
 
   const submitGuess = () => {
     if (!guess || !puzzle) return;
@@ -1514,6 +1648,7 @@ function Whereious({ onBack }) {
       setStreak(0);
     }
   };
+  submitGuessRef.current = submitGuess;
 
   const chooseSpecificEvent = (ev) => {
     setGridCategory(null);
@@ -1679,7 +1814,7 @@ function Whereious({ onBack }) {
 
           {/* Action buttons - touch-friendly on mobile */}
           <div className="grid grid-cols-3 gap-2 sm:gap-2 mb-4">
-            <button onClick={() => setShowHowTo(true)} className={`rounded-xl py-3 sm:py-2.5 min-h-[44px] sm:min-h-0 ${ghostBtn} text-xs font-semibold touch-manipulation`}>How To Play</button>
+            <button onClick={() => setShowTutorial(true)} className={`rounded-xl py-3 sm:py-2.5 min-h-[44px] sm:min-h-0 ${ghostBtn} text-xs font-semibold touch-manipulation`}>How To Play</button>
             <button onClick={() => setShowSettings(true)} className={`rounded-xl py-3 sm:py-2.5 min-h-[44px] sm:min-h-0 ${ghostBtn} text-xs font-semibold touch-manipulation`}>Settings</button>
             <button onClick={newGame} className={`rounded-xl py-3 sm:py-2.5 min-h-[44px] sm:min-h-0 ${primaryBtn} text-xs font-semibold touch-manipulation`}>New Question</button>
           </div>
@@ -1767,36 +1902,6 @@ function Whereious({ onBack }) {
           )}
         </div>
       </div>
-
-      {/* How To Play */}
-      {showHowTo && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 sm:p-4 z-50">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-md max-h-[88dvh] flex flex-col rounded-2xl shadow-2xl ${isLight ? "bg-white text-zinc-900" : "bg-[#14181f] text-zinc-100 border border-blue-500/10"}`}>
-            <div className="flex items-center justify-between p-4 sm:p-6 pb-0 flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">{"\uD83C\uDF0D"}</span>
-                <h2 className="text-xl font-bold">How to Play</h2>
-              </div>
-              <button onClick={() => setShowHowTo(false)} className={`px-2.5 py-1.5 rounded-lg text-sm touch-manipulation ${isLight ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-700" : "bg-white/10 hover:bg-white/15 text-zinc-300"}`}>{"\u2715"}</button>
-            </div>
-            <div className="space-y-4 p-4 sm:p-6 overflow-y-auto overscroll-contain">
-              {[
-                ["1", "Select your categories: tap the category buttons (Tech, History, Science, etc.) to choose which topics you want. Selected ones stay highlighted. Use \"All\" to enable every category or \"Clear\" to deselect all, then tap the categories you want."],
-                ["2", "Read the question and figure out where in the world the event happened."],
-                ["3", "Click on the map to place your pin. Click again to move it."],
-                ["4", "Hit Submit Guess to see how close you were."],
-                ["5", "Earn up to 5,000 points \u2014 the closer your guess, the higher the score!"],
-              ].map(([num, text]) => (
-                <div key={num} className="flex gap-3 items-start">
-                  <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400"}`}>{num}</div>
-                  <p className={`text-sm pt-1 ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>{text}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* Settings */}
       {showSettings && (
