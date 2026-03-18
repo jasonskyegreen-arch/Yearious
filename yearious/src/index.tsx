@@ -1077,12 +1077,6 @@ export function Yearious({ onBack }) {
                         Type a 4-digit year and press ↵ to guess
                       </motion.p>
                     )}
-                    {tutStatus === "playing" && tutGuesses.length > 0 && !tutRevealing && (
-                      <motion.p key="tries" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="mb-2 text-center text-sm opacity-70">
-                        {4 - tutGuesses.length} {4 - tutGuesses.length === 1 ? "try" : "tries"} remaining
-                      </motion.p>
-                    )}
                   </AnimatePresence>
 
                   {/* Real 4-row board using GuessRow */}
@@ -1143,8 +1137,8 @@ export function Yearious({ onBack }) {
                     </p>
                   )}
 
-                  {/* Always show keypad during tutorial */}
-                  {tutStatus === "playing" && (
+                  {/* Show keypad on mobile only */}
+                  {isMobile && tutStatus === "playing" && (
                     <MobileKeyboard onDigit={handleTutDigit} onBackspace={handleTutBackspace} onEnter={handleTutSubmit} theme={theme} />
                   )}
 
@@ -1166,29 +1160,87 @@ export function Yearious({ onBack }) {
                   )}
                 </>
               ) : (
-                /* Step 1: Mode guide */
+                /* Step 1: Mode-specific guide */
                 <>
-                  <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Switch modes anytime with the toggle at the top:</p>
-                  <div className="space-y-2.5 mb-4">
-                    {[
-                      { name: "Classic", color: "#22c55e", desc: "Green = right place, Yellow = too low, Orange = too high. Perfect for beginners!" },
-                      { name: "Advanced", color: "#6366f1", desc: "Teal = right place, dashed = right digit wrong place, gray = not in year. No direction hints." },
-                      { name: "Expert", color: "#f59e0b", desc: "Gold = correct, Black = wrong. Pure deduction!" },
-                    ].map(({ name, color, desc }) => (
-                      <div key={name} className={`rounded-xl p-3 border ${
-                        gameMode === name.toLowerCase()
-                          ? (isLight ? "border-zinc-400 bg-zinc-50" : "border-zinc-500 bg-zinc-800/60")
-                          : (isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800/40")
-                      }`}>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                          <div className="font-bold text-sm" style={{ color }}>{name}</div>
-                          {gameMode === name.toLowerCase() && <span className={`text-[10px] ml-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>(current)</span>}
-                        </div>
-                        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
+                  {isAdvanced ? (
+                    /* Advanced: teach the positional hint mechanic */
+                    <>
+                      <p className={`font-bold text-base mb-1 ${isLight ? "text-indigo-700" : "text-indigo-300"}`}>Advanced Mode</p>
+                      <p className={`text-sm mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                        No high/low hints — instead you get positional clues about each digit:
+                      </p>
+                      <div className="space-y-2.5 mb-4">
+                        {[
+                          { bg: "#14b8a6", text: "#fff", label: "Teal", desc: "Right digit, right position — perfect!" },
+                          { bg: isLight ? "#ccfbf1" : "#134e4a", text: isLight ? "#0f766e" : "#5eead4", label: "Teal dashed", desc: "Right digit, but in the wrong position — rearrange it!", dashed: true },
+                          { bg: "#374151", text: "#9ca3af", label: "Gray", desc: "This digit is not in the year at all." },
+                        ].map(({ bg, text, label, desc, dashed }) => (
+                          <div key={label} className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-base"
+                              style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>6</div>
+                            <div>
+                              <span className="font-semibold text-sm" style={{ color: bg === "#374151" ? "#9ca3af" : bg }}>{label}</span>
+                              <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      <div className={`rounded-xl p-3 text-xs mb-4 ${isLight ? "bg-indigo-50 border border-indigo-200 text-indigo-700" : "bg-indigo-950/40 border border-indigo-800/40 text-indigo-300"}`}>
+                        💡 A teal-dashed digit appears somewhere in the year — try it in a different position next guess!
+                      </div>
+                    </>
+                  ) : isExpert ? (
+                    /* Expert: teach the no-hints deduction approach */
+                    <>
+                      <p className={`font-bold text-base mb-1 ${isLight ? "text-amber-700" : "text-amber-400"}`}>Expert Mode</p>
+                      <p className={`text-sm mb-4 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                        Only two colors — no high, no low, no position hints. Pure deduction.
+                      </p>
+                      <div className="space-y-2.5 mb-4">
+                        {[
+                          { bg: "#f59e0b", text: "#000", label: "Gold", desc: "Correct digit in the correct position." },
+                          { bg: "#0a0a0a", text: "#fbbf24", label: "Black", desc: "Wrong digit — that number is not in this position." },
+                        ].map(({ bg, text, label, desc }) => (
+                          <div key={label} className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-base"
+                              style={{ background: bg, color: text }}>9</div>
+                            <div>
+                              <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg }}>{label}</span>
+                              <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className={`rounded-xl p-3 text-xs mb-4 ${isLight ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-amber-950/40 border border-amber-800/40 text-amber-300"}`}>
+                        💡 Strategy: start with a round number like 1900 or 2000 to lock in the century, then narrow down each digit.
+                      </div>
+                    </>
+                  ) : (
+                    /* Classic: mode comparison */
+                    <>
+                      <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Want more challenge? Switch modes anytime with the toggle at the top:</p>
+                      <div className="space-y-2.5 mb-4">
+                        {[
+                          { name: "Classic", color: "#22c55e", desc: "Green = right place, Yellow = too low, Orange = too high. Directional hints every guess." },
+                          { name: "Advanced", color: "#6366f1", desc: "Teal = exact, dashed = right digit wrong place, gray = not in year. No high/low hints." },
+                          { name: "Expert", color: "#f59e0b", desc: "Gold = correct, Black = wrong. No hints at all — pure deduction!" },
+                        ].map(({ name, color, desc }) => (
+                          <div key={name} className={`rounded-xl p-3 border ${
+                            gameMode === name.toLowerCase()
+                              ? (isLight ? "border-zinc-400 bg-zinc-50" : "border-zinc-500 bg-zinc-800/60")
+                              : (isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800/40")
+                          }`}>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                              <div className="font-bold text-sm" style={{ color }}>{name}</div>
+                              {gameMode === name.toLowerCase() && <span className={`text-[10px] ml-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>(current)</span>}
+                            </div>
+                            <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   <div className="flex gap-2">
                     <button onClick={() => setTutShowModes(false)}
                       className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
