@@ -470,6 +470,8 @@ export function Yearious({ onBack }) {
   function hasSeenModeTutorial(m) {
     try { return !!localStorage.getItem(`yg_tutorialSeen_${m}`); } catch { return true; }
   }
+  // True only if the player has never seen any mode's tutorial yet
+  const isFirstEver = !hasSeenModeTutorial("classic") && !hasSeenModeTutorial("advanced") && !hasSeenModeTutorial("expert");
   const [showTutorial, setShowTutorial] = useState(() => !hasSeenModeTutorial(gameMode));
   function dismissTutorial() {
     try { localStorage.setItem(`yg_tutorialSeen_${gameMode}`, "1"); } catch {}
@@ -1021,8 +1023,8 @@ export function Yearious({ onBack }) {
                       ))}
                     </div>
                   </div>
-                  {/* Classic gets "see other modes"; Advanced/Expert go straight to Start */}
-                  {!isAdvanced && !isExpert ? (
+                  {/* First ever visit: offer "see other modes"; returning players go straight to Start */}
+                  {isFirstEver ? (
                     <>
                       <button onClick={() => setTutShowModes(true)}
                         className={`w-full rounded-xl py-2.5 text-sm font-bold mb-2 ${accentBtnClass}`}>
