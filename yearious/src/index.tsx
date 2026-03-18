@@ -306,149 +306,6 @@ function CategoryGridModal({ category, events, solvedKeys, onClose, onPick, them
 }
 
 // ===================== Tutorial Overlays =====================
-function YeariousTutorial({ onClose, theme, mode = "classic" }) {
-  const [step, setStep] = useState(0);
-  const isLight = theme === "light";
-  const isExpert = mode === "expert";
-  const isAdvanced = mode === "advanced";
-  const accentColor = isExpert ? "#f59e0b" : isAdvanced ? "#6366f1" : "#22c55e";
-  const accentBtnClass = isExpert
-    ? "bg-amber-500 hover:bg-amber-400 text-black"
-    : isAdvanced
-      ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-      : "bg-emerald-600 hover:bg-emerald-500 text-white";
-  const headerClass = isExpert
-    ? (isLight ? "bg-amber-50 border-b border-amber-200" : "bg-amber-950/40 border-b border-amber-800/40")
-    : isAdvanced
-      ? (isLight ? "bg-indigo-50 border-b border-indigo-200" : "bg-indigo-950/40 border-b border-indigo-800/40")
-      : (isLight ? "bg-emerald-50 border-b border-emerald-200" : "bg-emerald-950/40 border-b border-emerald-800/40");
-  const totalSteps = 3;
-  const modeTitle = isExpert ? "Expert Mode" : isAdvanced ? "Advanced Mode" : "Welcome to Yearious!";
-  const modeSubtitle = isExpert
-    ? "No hints — gold = correct, black = wrong. Can you crack the year?"
-    : isAdvanced
-      ? "No high/low hints. Use the digit positions to crack the year!"
-      : "Guess the 4-digit year of historical events in 4 tries.";
-
-  const colorRows = isExpert
-    ? [
-        { bg: "#f59e0b", text: "#000", label: "Gold", desc: "Correct digit, correct position" },
-        { bg: "#0a0a0a", text: "#fbbf24", label: "Black", desc: "Wrong digit — no further hints" },
-      ]
-    : isAdvanced
-      ? [
-          { bg: "#14b8a6", text: "#fff", label: "Teal", desc: "Right digit, right position" },
-          { bg: "#134e4a", text: "#5eead4", label: "Teal dashed", desc: "Right digit, wrong position", dashed: true },
-          { bg: "#374151", text: "#9ca3af", label: "Gray", desc: "Digit not in the year" },
-        ]
-      : [
-          { bg: "#22c55e", text: "#fff", label: "Green", desc: "Right digit, right position" },
-          { bg: "#facc15", text: "#111", label: "Yellow", desc: "Digit is too low — guess higher" },
-          { bg: "#f97316", text: "#fff", label: "Orange", desc: "Digit is too high — guess lower" },
-        ];
-
-  const stepContent = [
-    // Step 0 — Welcome
-    <div key="s0" className="space-y-4">
-      <p className={`text-sm leading-relaxed ${isLight ? "text-zinc-600" : "text-zinc-300"}`}>{modeSubtitle}</p>
-      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
-        <div className={`text-[10px] uppercase tracking-wider font-semibold mb-1.5 ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Example question</div>
-        <div className={`font-semibold text-sm ${isLight ? "text-zinc-800" : "text-zinc-200"}`}>When did the first moon landing take place?</div>
-      </div>
-      <div className="flex justify-center gap-2">
-        {["1", "9", "6", "9"].map((d, i) => (
-          <div key={i} className="w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-lg"
-            style={{ background: isLight ? "#e5e7eb" : "#27272a", color: isLight ? "#111827" : "#ffffff", border: `1px solid ${isLight ? "#d1d5db" : "#3f3f46"}` }}>{d}</div>
-        ))}
-      </div>
-      <p className={`text-xs text-center ${isLight ? "text-zinc-500" : "text-zinc-500"}`}>Type a year, press Enter — tiles flip to reveal hints</p>
-    </div>,
-    // Step 1 — Colors
-    <div key="s1" className="space-y-3">
-      <p className={`text-sm ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>After each guess, every tile reveals a hint:</p>
-      <div className="space-y-2.5">
-        {colorRows.map(({ bg, text, label, desc, dashed }) => (
-          <div key={label} className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center font-extrabold text-base"
-              style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>7</div>
-            <div>
-              <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg === "#134e4a" ? "#5eead4" : bg }}>{label}</span>
-              <span className={`text-xs ml-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      {!isExpert && (
-        <div className={`rounded-xl p-3 text-xs mt-1 ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-600" : "bg-zinc-800/40 border border-zinc-700 text-zinc-400"}`}>
-          {isAdvanced ? "💡 Think like a code-breaker — use positions, not directions!" : "💡 Use yellow/orange to narrow down each digit one by one!"}
-        </div>
-      )}
-    </div>,
-    // Step 2 — Controls
-    <div key="s2" className="space-y-3">
-      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
-        <div className="font-semibold text-sm mb-1">⌨️ Desktop</div>
-        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Type digits, use arrow keys to move between tiles. Press <strong>Enter</strong> to submit.</div>
-      </div>
-      <div className={`rounded-xl p-3 ${isLight ? "bg-zinc-100" : "bg-zinc-800/60"}`}>
-        <div className="font-semibold text-sm mb-1">📱 Mobile</div>
-        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Use the on-screen keypad. Tap a tile to move the cursor. Tap ↵ to submit.</div>
-      </div>
-      <div className={`rounded-xl p-3 text-xs ${isLight ? "bg-zinc-50 border border-zinc-200 text-zinc-600" : "bg-zinc-800/40 border border-zinc-700 text-zinc-300"}`}>
-        💡 Switch between <strong>Classic</strong>, <strong>Advanced</strong>, and <strong>Expert</strong> anytime with the toggle at the top!
-      </div>
-    </div>,
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
-      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-        className={`w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden ${isLight ? "bg-white text-zinc-900" : "bg-zinc-900 text-zinc-100 border border-zinc-700"}`}>
-        <div className={`px-5 py-4 ${headerClass}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-2xl mb-0.5">📅</div>
-              <h2 className="text-lg font-extrabold">{modeTitle}</h2>
-            </div>
-            <div className="flex gap-1.5 items-center">
-              {Array.from({ length: totalSteps }, (_, i) => (
-                <button key={i} onClick={() => setStep(i)}
-                  className="w-2 h-2 rounded-full transition-all"
-                  style={{ background: i === step ? accentColor : (isLight ? "#d1d5db" : "#52525b"), transform: i === step ? "scale(1.3)" : "scale(1)" }} />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="px-5 py-4 min-h-[180px]">
-          <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
-              {stepContent[step]}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <div className="px-5 pb-5 flex gap-2">
-          {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)}
-              className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
-              ← Back
-            </button>
-          )}
-          {step < totalSteps - 1 ? (
-            <button onClick={() => setStep(s => s + 1)}
-              className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-all ${accentBtnClass}`}>
-              Next →
-            </button>
-          ) : (
-            <button onClick={onClose}
-              className={`flex-1 rounded-xl py-3 text-base font-bold transition-all shadow-lg active:scale-95 ${accentBtnClass}`}>
-              Start Playing!
-            </button>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 
 function WhereiousTutorial({ onClose, theme }) {
   const [step, setStep] = useState(0);
@@ -619,6 +476,25 @@ export function Yearious({ onBack }) {
     setShowTutorial(false);
   }
 
+  // ====== Tutorial mini-game state ======
+  const TUT_TARGET = "1969";
+  const [tutGuesses, setTutGuesses] = useState([]);
+  const [tutPatterns, setTutPatterns] = useState([]);
+  const [tutInput, setTutInput] = useState(["", "", "", ""]);
+  const [tutCursor, setTutCursor] = useState(0);
+  const [tutStatus, setTutStatus] = useState("playing");
+  const [tutRevealing, setTutRevealing] = useState(false);
+  const [tutShowModes, setTutShowModes] = useState(false);
+
+  // Reset tutorial state whenever tutorial opens
+  useEffect(() => {
+    if (showTutorial) {
+      setTutGuesses([]); setTutPatterns([]);
+      setTutInput(["", "", "", ""]); setTutCursor(0);
+      setTutStatus("playing"); setTutRevealing(false); setTutShowModes(false);
+    }
+  }, [showTutorial]);
+
   // ====== Modals ======
   const [showSettings, setShowSettings] = useState(false);
   const [gridCategory, setGridCategory] = useState(null);
@@ -700,6 +576,27 @@ export function Yearious({ onBack }) {
     : isAdvanced
       ? "bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/25"
       : "bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-lg shadow-emerald-500/25";
+  const accentColor = isExpert ? "#f59e0b" : isAdvanced ? "#6366f1" : "#22c55e";
+  const accentBtnClass = isExpert
+    ? "bg-amber-500 hover:bg-amber-400 text-black"
+    : isAdvanced ? "bg-indigo-600 hover:bg-indigo-500 text-white"
+    : "bg-emerald-600 hover:bg-emerald-500 text-white";
+  const tutColorLegend = isExpert
+    ? [
+        { bg: "#f59e0b", text: "#000", label: "Gold", desc: "Correct digit, correct position" },
+        { bg: "#0a0a0a", text: "#fbbf24", label: "Black", desc: "Wrong digit — no direction hints" },
+      ]
+    : isAdvanced
+      ? [
+          { bg: "#14b8a6", text: "#fff", label: "Teal", desc: "Right digit, right position" },
+          { bg: isLight ? "#ccfbf1" : "#134e4a", text: isLight ? "#0f766e" : "#5eead4", label: "Teal dashed", desc: "Right digit, wrong position", dashed: true },
+          { bg: "#374151", text: "#9ca3af", label: "Gray", desc: "Digit not in the year at all" },
+        ]
+      : [
+          { bg: "#22c55e", text: "#fff", label: "Green", desc: "Right digit, right position" },
+          { bg: "#facc15", text: "#111", label: "Yellow", desc: "Digit is too low — guess higher" },
+          { bg: "#f97316", text: "#fff", label: "Orange", desc: "Digit is too high — guess lower" },
+        ];
   const pillSelected = isLight
     ? isExpert
       ? "bg-amber-50 border-2 border-amber-500 text-amber-900 shadow-sm"
@@ -854,6 +751,7 @@ export function Yearious({ onBack }) {
   useEffect(() => {
     if (isMobile) return;
     function onKeyDown(e) {
+      if (showTutorial) return;
       if (status !== "playing" || !puzzle || revealing) return;
       const k = e.key;
       const tag = (e.target?.tagName || "").toLowerCase();
@@ -867,7 +765,70 @@ export function Yearious({ onBack }) {
     }
     window.addEventListener("keydown", onKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isMobile, status, puzzle, revealing, cursor, inputArr]);
+  }, [isMobile, status, puzzle, revealing, cursor, inputArr, showTutorial]);
+
+  // Tutorial keyboard handler (capture phase — intercepts before the game handler)
+  useEffect(() => {
+    if (!showTutorial || tutShowModes || tutStatus !== "playing" || tutRevealing) return;
+    function onTutKey(e) {
+      e.stopImmediatePropagation();
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        setTutInput(arr => { const next = [...arr]; next[tutCursor] = e.key; return next; });
+        setTutCursor(c => Math.min(c + 1, 3));
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        setTutInput(arr => {
+          const next = [...arr];
+          if (next[tutCursor]) { next[tutCursor] = ""; }
+          else if (tutCursor > 0) { next[tutCursor - 1] = ""; }
+          return next;
+        });
+        setTutCursor(c => (tutInput[c] ? c : Math.max(0, c - 1)));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleTutSubmit();
+      }
+    }
+    window.addEventListener("keydown", onTutKey, { capture: true });
+    return () => window.removeEventListener("keydown", onTutKey, { capture: true });
+  }, [showTutorial, tutShowModes, tutStatus, tutRevealing, tutCursor, tutInput]);
+
+  function handleTutDigit(d) {
+    if (tutStatus !== "playing" || tutRevealing) return;
+    setTutInput(arr => { const next = [...arr]; next[tutCursor] = d; return next; });
+    setTutCursor(c => Math.min(c + 1, 3));
+  }
+  function handleTutBackspace() {
+    if (tutStatus !== "playing" || tutRevealing) return;
+    setTutInput(arr => {
+      const next = [...arr];
+      if (next[tutCursor]) { next[tutCursor] = ""; }
+      else if (tutCursor > 0) { next[tutCursor - 1] = ""; }
+      return next;
+    });
+    setTutCursor(c => (tutInput[c] ? c : Math.max(0, c - 1)));
+  }
+  function handleTutSubmit() {
+    const guessStr = tutInput.join("");
+    if (tutRevealing || tutStatus !== "playing" || guessStr.length !== 4 || !/^\d{4}$/.test(guessStr)) return;
+    const pattern = scoreGuess(guessStr, TUT_TARGET, gameMode);
+    const newGuesses = [...tutGuesses, guessStr];
+    const newPatterns = [...tutPatterns, pattern];
+    setTutGuesses(newGuesses);
+    setTutPatterns(newPatterns);
+    setTutInput(["", "", "", ""]);
+    setTutCursor(0);
+    setTutRevealing(true);
+    const totalMs = Math.round((0.8 + 0.2 * 3) * 1000) + 100;
+    setTimeout(() => {
+      setTutRevealing(false);
+      const won = guessStr === TUT_TARGET;
+      const lost = !won && newGuesses.length >= 4;
+      if (won) setTutStatus("won");
+      else if (lost) setTutStatus("lost");
+    }, totalMs);
+  }
 
   const len = puzzle?.year?.length ?? 4;
   const inputStr = (inputArr || []).map(ch => ch || "").join(""); // for validation/submit (no spaces)
@@ -1096,7 +1057,152 @@ export function Yearious({ onBack }) {
           transition={{ duration: 0.3, ease: "easeOut" }}
           className={cardClass}
         >
-          {!puzzle ? (
+          {showTutorial ? (
+            /* ── Tutorial: integrated into the main game card ── */
+            <>
+              {!tutShowModes ? (
+                /* Step 0: Play a round against 1969 */
+                <>
+                  <div className="mb-1 text-center">
+                    <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>History · Tutorial</span>
+                  </div>
+                  <div className="mb-4 sm:mb-5 text-center text-xl sm:text-2xl font-semibold leading-snug">
+                    When did the first moon landing take place?
+                  </div>
+
+                  <AnimatePresence>
+                    {tutStatus === "playing" && tutGuesses.length === 0 && !tutRevealing && (
+                      <motion.p key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className={`mb-2 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                        Type a 4-digit year and press ↵ to guess
+                      </motion.p>
+                    )}
+                    {tutStatus === "playing" && tutGuesses.length > 0 && !tutRevealing && (
+                      <motion.p key="tries" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="mb-2 text-center text-sm opacity-70">
+                        {4 - tutGuesses.length} {4 - tutGuesses.length === 1 ? "try" : "tries"} remaining
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Real 4-row board using GuessRow */}
+                  <div className="my-5 sm:my-6">
+                    {Array.from({ length: 4 }, (_, row) => {
+                      const isActiveRow = row === tutGuesses.length && tutStatus === "playing" && !tutRevealing;
+                      const hasPattern = !!tutPatterns[row];
+                      const revealMode = hasPattern && row === tutGuesses.length - 1 ? "stagger" : hasPattern ? "instant" : "none";
+                      const tutDisplayStr = tutInput.map(ch => ch || " ").join("");
+                      return (
+                        <div key={row} className="flex justify-center">
+                          <GuessRow
+                            guess={tutGuesses[row] ?? (isActiveRow ? tutDisplayStr : "")}
+                            pattern={tutPatterns[row]}
+                            length={4}
+                            activeIndex={isActiveRow ? tutCursor : -1}
+                            setActiveIndex={(i) => { if (isActiveRow) setTutCursor(i); }}
+                            active={isActiveRow}
+                            theme={theme}
+                            revealMode={revealMode}
+                            isExpert={isExpert}
+                            isAdvanced={isAdvanced}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Color legend — appears inline after first reveal */}
+                  <AnimatePresence>
+                    {tutGuesses.length > 0 && !tutRevealing && (
+                      <motion.div key="legend" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className={`mb-4 rounded-xl p-3 ${isLight ? "bg-zinc-50 border border-zinc-200" : "bg-zinc-800/40 border border-zinc-700/60"}`}>
+                        <p className={`text-[10px] uppercase tracking-wider font-semibold mb-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>What the colors mean</p>
+                        <div className="space-y-1.5">
+                          {tutColorLegend.map(({ bg, text, label, desc, dashed }) => (
+                            <div key={label} className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center font-extrabold text-sm"
+                                style={{ background: bg, color: text, border: dashed ? "2px dashed #0d9488" : "none" }}>7</div>
+                              <div>
+                                <span className="font-semibold text-sm" style={{ color: bg === "#0a0a0a" ? "#f59e0b" : bg }}>{label}</span>
+                                <span className={`text-xs ml-1.5 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>{desc}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Result messages */}
+                  {tutStatus === "won" && (
+                    <p className={`text-center text-sm font-bold mb-3 ${isLight ? "text-emerald-600" : "text-emerald-400"}`}>🎉 You got it!</p>
+                  )}
+                  {tutStatus === "lost" && (
+                    <p className={`text-center text-sm font-semibold mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                      The answer was <strong style={{ color: accentColor }}>1969</strong>
+                    </p>
+                  )}
+
+                  {/* Always show keypad during tutorial */}
+                  {tutStatus === "playing" && (
+                    <MobileKeyboard onDigit={handleTutDigit} onBackspace={handleTutBackspace} onEnter={handleTutSubmit} theme={theme} />
+                  )}
+
+                  {/* After round ends — see the modes */}
+                  {tutStatus !== "playing" && !tutRevealing && (
+                    <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      onClick={() => setTutShowModes(true)}
+                      className={`mt-3 w-full rounded-xl py-2.5 text-sm font-bold ${accentBtnClass}`}>
+                      See the modes →
+                    </motion.button>
+                  )}
+
+                  {/* Skip — only before first guess */}
+                  {tutStatus === "playing" && !tutRevealing && tutGuesses.length === 0 && (
+                    <button onClick={() => setTutShowModes(true)}
+                      className={`mt-2 w-full text-xs py-1 rounded-lg ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}>
+                      Skip →
+                    </button>
+                  )}
+                </>
+              ) : (
+                /* Step 1: Mode guide */
+                <>
+                  <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>Switch modes anytime with the toggle at the top:</p>
+                  <div className="space-y-2.5 mb-4">
+                    {[
+                      { name: "Classic", color: "#22c55e", desc: "Green = right place, Yellow = too low, Orange = too high. Perfect for beginners!" },
+                      { name: "Advanced", color: "#6366f1", desc: "Teal = right place, dashed = right digit wrong place, gray = not in year. No direction hints." },
+                      { name: "Expert", color: "#f59e0b", desc: "Gold = correct, Black = wrong. Pure deduction!" },
+                    ].map(({ name, color, desc }) => (
+                      <div key={name} className={`rounded-xl p-3 border ${
+                        gameMode === name.toLowerCase()
+                          ? (isLight ? "border-zinc-400 bg-zinc-50" : "border-zinc-500 bg-zinc-800/60")
+                          : (isLight ? "border-zinc-200 bg-zinc-50" : "border-zinc-700 bg-zinc-800/40")
+                      }`}>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                          <div className="font-bold text-sm" style={{ color }}>{name}</div>
+                          {gameMode === name.toLowerCase() && <span className={`text-[10px] ml-1 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>(current)</span>}
+                        </div>
+                        <div className={`text-xs ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>{desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setTutShowModes(false)}
+                      className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
+                      ← Back
+                    </button>
+                    <button onClick={dismissTutorial}
+                      className={`flex-1 rounded-xl py-2.5 text-base font-bold transition-all shadow-lg active:scale-95 ${accentBtnClass}`}>
+                      Start Playing!
+                    </button>
+                  </div>
+                </>
+              )}
+            </>
+          ) : !puzzle ? (
             <div className="py-6 sm:py-8 text-center">
               {selectedCats.length === 0 ? (
                 <>
@@ -1271,8 +1377,6 @@ export function Yearious({ onBack }) {
         />
       )}
 
-      {/* Tutorial (first-timer + How To Play) */}
-      {showTutorial && <YeariousTutorial onClose={dismissTutorial} theme={theme} mode={gameMode} />}
     </div>
   );
 }
