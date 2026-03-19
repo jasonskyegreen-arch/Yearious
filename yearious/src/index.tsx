@@ -479,12 +479,79 @@ export function Yearious({ onBack }) {
   }
 
   // ====== Tutorial state ======
-  const [tutShowModes, setTutShowModes] = useState(false);
+  // tutStep: 0 = mini-game (first-ever) or color-legend (returning), 1 = all-modes overview (first-ever only)
+  const TUT_TARGET = "1969";
+  const [tutStep, setTutStep] = useState(0);
+  const [tutGuesses, setTutGuesses] = useState([]);
+  const [tutPatterns, setTutPatterns] = useState([]);
+  const [tutInput, setTutInput] = useState(["","","",""]);
+  const [tutCursor, setTutCursor] = useState(0);
+  const [tutStatus, setTutStatus] = useState("playing"); // "playing"|"won"|"lost"
+  const [tutRevealing, setTutRevealing] = useState(false);
 
-  // Reset tutorial step whenever tutorial opens
+  // Reset tutorial state whenever tutorial opens
   useEffect(() => {
-    if (showTutorial) setTutShowModes(false);
+    if (showTutorial) {
+      setTutStep(0);
+      setTutGuesses([]);
+      setTutPatterns([]);
+      setTutInput(["","","",""]);
+      setTutCursor(0);
+      setTutStatus("playing");
+      setTutRevealing(false);
+    }
   }, [showTutorial]);
+
+  function handleTutDigit(d) {
+    if (tutStatus !== "playing" || tutRevealing) return;
+    setTutInput(arr => {
+      const next = [...arr];
+      if (next[tutCursor] === "") {
+        next[tutCursor] = d;
+        const nextEmpty = next.findIndex((v, i) => i > tutCursor && v === "");
+        if (nextEmpty !== -1) setTutCursor(nextEmpty);
+      }
+      return next;
+    });
+  }
+
+  function handleTutBackspace() {
+    if (tutStatus !== "playing" || tutRevealing) return;
+    setTutInput(arr => {
+      const next = [...arr];
+      if (next[tutCursor] !== "") {
+        next[tutCursor] = "";
+      } else if (tutCursor > 0) {
+        setTutCursor(c => c - 1);
+        next[tutCursor - 1] = "";
+      }
+      return next;
+    });
+  }
+
+  function handleTutSubmit() {
+    if (tutStatus !== "playing" || tutRevealing) return;
+    if (tutInput.some(c => c === "")) return;
+    const guess = tutInput.join("");
+    const pattern = scoreGuess(guess, TUT_TARGET, "classic");
+    setTutRevealing(true);
+    const totalMs = Math.round((0.8 + 0.2 * 3) * 1000) + 100;
+    setTimeout(() => {
+      const newGuesses = [...tutGuesses, guess];
+      const newPatterns = [...tutPatterns, pattern];
+      setTutGuesses(newGuesses);
+      setTutPatterns(newPatterns);
+      setTutRevealing(false);
+      if (guess === TUT_TARGET) {
+        setTutStatus("won");
+      } else if (newGuesses.length >= 4) {
+        setTutStatus("lost");
+      } else {
+        setTutInput(["","","",""]);
+        setTutCursor(0);
+      }
+    }, totalMs);
+  }
 
   // ====== Modals ======
   const [showSettings, setShowSettings] = useState(false);
@@ -738,6 +805,22 @@ export function Yearious({ onBack }) {
     try { localStorage.setItem("yg_selectedCats", JSON.stringify(selectedCats)); } catch {}
   }, [selectedCats]);
 
+  // Desktop keyboard during tutorial mini-game (placed here so isMobile is in scope)
+  useEffect(() => {
+    if (!showTutorial || !isFirstEver || tutStep !== 0 || isMobile) return;
+    function onTutKeyDown(e) {
+      if (tutStatus !== "playing" || tutRevealing) return;
+      const k = e.key;
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (e.target?.isContentEditable || ["input","textarea","select"].includes(tag)) return;
+      if (k === "Enter") { e.preventDefault(); handleTutSubmit(); return; }
+      if (k === "Backspace") { e.preventDefault(); handleTutBackspace(); return; }
+      if (ONLY_DIGITS.test(k)) { e.preventDefault(); handleTutDigit(k); return; }
+    }
+    window.addEventListener("keydown", onTutKeyDown, { passive: false });
+    return () => window.removeEventListener("keydown", onTutKeyDown);
+  }, [showTutorial, isFirstEver, tutStep, isMobile, tutStatus, tutRevealing, tutInput, tutCursor, tutGuesses, tutPatterns]);
+
   // ====== Desktop typing ======
   useEffect(() => {
     if (isMobile) return;
@@ -986,10 +1069,144 @@ export function Yearious({ onBack }) {
           className={cardClass}
         >
           {showTutorial ? (
-            /* ── Tutorial: colour guide + (Classic only) mode comparison ── */
+            /* ── Tutorial ── */
             <>
-              {!tutShowModes ? (
-                /* Step 0: What the colors mean */
+              {isFirstEver && tutStep === 0 ? (
+                /* First-ever step 0: Play a round */
+                <>
+                  <div className="mb-1 text-center">
+                    <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>History · Tutorial</span>
+                  </div>
+                  <div className="mb-3 text-center text-xl sm:text-2xl font-semibold leading-snug">
+                    When did the first moon landing take place?
+                  </div>
+                  {tutStatus === "playing" && tutGuesses.length === 0 && !tutRevealing && (
+                    <p className={`mb-2 text-center text-sm ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      Type a 4-digit year and press ↵ to guess
+                    </p>
+                  )}
+                  {/* 4-row board */}
+                  <div className="my-3">
+                    {Array.from({ length: 4 }, (_, row) => {
+                      const isActiveRow = row === tutGuesses.length && tutStatus === "playing" && !tutRevealing;
+                      const hasPattern = !!tutPatterns[row];
+                      const revMode = hasPattern && row === tutGuesses.length - 1 ? "stagger" : hasPattern ? "instant" : "none";
+                      const dispStr = tutInput.map(ch => ch === "" ? " " : ch).join("");
+                      return (
+                        <div key={row} className="flex justify-center">
+                          <GuessRow
+                            guess={tutGuesses[row] ?? (isActiveRow ? dispStr : "")}
+                            pattern={tutPatterns[row]}
+                            length={4}
+                            activeIndex={isActiveRow ? tutCursor : -1}
+                            setActiveIndex={i => { if (isActiveRow) setTutCursor(i); }}
+                            active={isActiveRow}
+                            theme={theme}
+                            revealMode={revMode}
+                            isExpert={false}
+                            isAdvanced={false}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {tutStatus === "won" && (
+                    <p className={`text-center text-sm font-bold mb-2 ${isLight ? "text-emerald-600" : "text-emerald-400"}`}>🎉 Nice! The answer was 1969.</p>
+                  )}
+                  {tutStatus === "lost" && (
+                    <p className={`text-center text-sm font-semibold mb-2 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
+                      The answer was <strong style={{ color: "#22c55e" }}>1969</strong> — you'll get the next one!
+                    </p>
+                  )}
+                  {tutStatus === "playing" && isMobile && (
+                    <MobileKeyboard onDigit={handleTutDigit} onBackspace={handleTutBackspace} onEnter={handleTutSubmit} theme={theme} />
+                  )}
+                  {tutStatus !== "playing" && !tutRevealing && (
+                    <motion.button initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      onClick={() => setTutStep(1)}
+                      className={`mt-2 w-full rounded-xl py-2.5 text-sm font-bold ${accentBtnClass}`}>
+                      See how the modes work →
+                    </motion.button>
+                  )}
+                  {tutStatus === "playing" && !tutRevealing && (
+                    <button onClick={() => setTutStep(1)}
+                      className={`mt-2 w-full text-xs py-1 rounded-lg ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}>
+                      Skip →
+                    </button>
+                  )}
+                </>
+              ) : isFirstEver && tutStep === 1 ? (
+                /* First-ever step 1: All 3 modes on one screen */
+                <>
+                  <p className={`text-xs mb-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                    Each mode shows different color hints. Switch anytime with the toggle at the top:
+                  </p>
+                  {/* Classic */}
+                  <div className="mb-2">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="font-bold text-sm text-emerald-500">Classic</span>
+                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>— high / low hints</span>
+                    </div>
+                    <div className="flex justify-center mb-0.5">
+                      <GuessRow guess="1995" pattern={["green","green","high","low"]}
+                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                        theme={theme} revealMode="instant" isExpert={false} isAdvanced={false} />
+                    </div>
+                    <div className={`flex flex-wrap gap-x-3 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      <span style={{ color: "#22c55e" }}>Green = right place</span>
+                      <span style={{ color: "#facc15" }}>Yellow = too low</span>
+                      <span style={{ color: "#f97316" }}>Orange = too high</span>
+                    </div>
+                  </div>
+                  {/* Advanced */}
+                  <div className="mb-2">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-2 h-2 rounded-full" style={{ background: "#6366f1" }} />
+                      <span className="font-bold text-sm" style={{ color: "#6366f1" }}>Advanced</span>
+                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>— positional hints</span>
+                    </div>
+                    <div className="flex justify-center mb-0.5">
+                      <GuessRow guess="1995" pattern={["green","green","wrong_position","wrong"]}
+                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                        theme={theme} revealMode="instant" isExpert={false} isAdvanced={true} />
+                    </div>
+                    <div className={`flex flex-wrap gap-x-3 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      <span style={{ color: "#14b8a6" }}>Teal = right place</span>
+                      <span style={{ color: isLight ? "#0f766e" : "#5eead4" }}>Dashed = right digit, wrong place</span>
+                      <span>Gray = not in year</span>
+                    </div>
+                  </div>
+                  {/* Expert */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-2 h-2 rounded-full" style={{ background: "#f59e0b" }} />
+                      <span className="font-bold text-sm" style={{ color: "#f59e0b" }}>Expert</span>
+                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>— no hints, pure deduction</span>
+                    </div>
+                    <div className="flex justify-center mb-0.5">
+                      <GuessRow guess="1995" pattern={["green","green","wrong","wrong"]}
+                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
+                        theme={theme} revealMode="instant" isExpert={true} isAdvanced={false} />
+                    </div>
+                    <div className={`flex gap-3 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      <span style={{ color: "#f59e0b" }}>Gold = correct</span>
+                      <span>Black = wrong</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setTutStep(0)}
+                      className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
+                      ← Back
+                    </button>
+                    <button onClick={dismissTutorial}
+                      className={`flex-1 rounded-xl py-2.5 text-base font-bold transition-all shadow-lg active:scale-95 ${accentBtnClass}`}>
+                      Start Playing!
+                    </button>
+                  </div>
+                </>
+              ) : (
+                /* Returning player: color legend for current mode only */
                 <>
                   <div className="mb-1 text-center">
                     <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>History · Tutorial</span>
@@ -997,7 +1214,6 @@ export function Yearious({ onBack }) {
                   <div className="mb-4 sm:mb-5 text-center text-xl sm:text-2xl font-semibold leading-snug">
                     When did the first moon landing take place?
                   </div>
-                  {/* Example guess row — "1995" vs 1989 */}
                   <div className="flex justify-center mb-4">
                     <GuessRow
                       guess="1995"
@@ -1006,7 +1222,6 @@ export function Yearious({ onBack }) {
                       theme={theme} revealMode="instant" isExpert={isExpert} isAdvanced={isAdvanced}
                     />
                   </div>
-                  {/* Color legend */}
                   <div className={`rounded-xl p-3 mb-4 ${isLight ? "bg-zinc-50 border border-zinc-200" : "bg-zinc-800/40 border border-zinc-700/60"}`}>
                     <p className={`text-[10px] uppercase tracking-wider font-semibold mb-2 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>What the colors mean</p>
                     <div className="space-y-1.5">
@@ -1023,76 +1238,10 @@ export function Yearious({ onBack }) {
                       ))}
                     </div>
                   </div>
-                  {/* First ever visit: offer "see other modes"; returning players go straight to Start */}
-                  {isFirstEver ? (
-                    <>
-                      <button onClick={() => setTutShowModes(true)}
-                        className={`w-full rounded-xl py-2.5 text-sm font-bold mb-2 ${accentBtnClass}`}>
-                        See other modes →
-                      </button>
-                      <button onClick={dismissTutorial}
-                        className={`w-full text-xs py-1 rounded-lg ${isLight ? "text-zinc-400 hover:text-zinc-600" : "text-zinc-600 hover:text-zinc-400"}`}>
-                        Skip →
-                      </button>
-                    </>
-                  ) : (
-                    <button onClick={dismissTutorial}
-                      className={`w-full rounded-xl py-2.5 text-base font-bold transition-all ${accentBtnClass}`}>
-                      Start Playing!
-                    </button>
-                  )}
-                </>
-              ) : (
-                /* Step 1 (Classic only): Other modes with real coloured example rows */
-                <>
-                  <p className={`text-sm mb-3 ${isLight ? "text-zinc-600" : "text-zinc-400"}`}>
-                    The same guess gives different info in each mode. Switch anytime with the toggle at the top:
-                  </p>
-                  {/* Advanced example */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#6366f1" }} />
-                      <span className="font-bold text-sm" style={{ color: "#6366f1" }}>Advanced</span>
-                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>positional hints, no high/low</span>
-                    </div>
-                    <div className="flex justify-center mb-1.5">
-                      <GuessRow guess="1995" pattern={["green","green","wrong_position","wrong"]}
-                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
-                        theme={theme} revealMode="instant" isExpert={false} isAdvanced={true} />
-                    </div>
-                    <div className={`flex flex-wrap gap-x-3 gap-y-0.5 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                      <span style={{ color: "#14b8a6" }}>Teal = right place</span>
-                      <span style={{ color: isLight ? "#0f766e" : "#5eead4" }}>Dashed = right digit, wrong place</span>
-                      <span>Gray = not in year</span>
-                    </div>
-                  </div>
-                  {/* Expert example */}
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#f59e0b" }} />
-                      <span className="font-bold text-sm" style={{ color: "#f59e0b" }}>Expert</span>
-                      <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>no hints at all — pure deduction</span>
-                    </div>
-                    <div className="flex justify-center mb-1.5">
-                      <GuessRow guess="1995" pattern={["green","green","wrong","wrong"]}
-                        length={4} activeIndex={-1} setActiveIndex={() => {}} active={false}
-                        theme={theme} revealMode="instant" isExpert={true} isAdvanced={false} />
-                    </div>
-                    <div className={`flex gap-3 justify-center text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                      <span style={{ color: "#f59e0b" }}>Gold = correct</span>
-                      <span>Black = wrong</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setTutShowModes(false)}
-                      className={`rounded-xl px-4 py-2.5 text-sm font-semibold border ${isLight ? "border-zinc-200 hover:bg-zinc-50 text-zinc-700" : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"}`}>
-                      ← Back
-                    </button>
-                    <button onClick={dismissTutorial}
-                      className={`flex-1 rounded-xl py-2.5 text-base font-bold transition-all shadow-lg active:scale-95 ${accentBtnClass}`}>
-                      Start Playing!
-                    </button>
-                  </div>
+                  <button onClick={dismissTutorial}
+                    className={`w-full rounded-xl py-2.5 text-base font-bold transition-all ${accentBtnClass}`}>
+                    Start Playing!
+                  </button>
                 </>
               )}
             </>
