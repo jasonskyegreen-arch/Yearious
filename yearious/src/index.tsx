@@ -534,13 +534,14 @@ export function Yearious({ onBack }) {
     if (tutInput.some(c => c === "")) return;
     const guess = tutInput.join("");
     const pattern = scoreGuess(guess, TUT_TARGET, "classic");
+    const newGuesses = [...tutGuesses, guess];
+    const newPatterns = [...tutPatterns, pattern];
+    // Add guess+pattern immediately so the row stays visible during the flip
+    setTutGuesses(newGuesses);
+    setTutPatterns(newPatterns);
     setTutRevealing(true);
     const totalMs = Math.round((0.8 + 0.2 * 3) * 1000) + 100;
     setTimeout(() => {
-      const newGuesses = [...tutGuesses, guess];
-      const newPatterns = [...tutPatterns, pattern];
-      setTutGuesses(newGuesses);
-      setTutPatterns(newPatterns);
       setTutRevealing(false);
       if (guess === TUT_TARGET) {
         setTutStatus("won");
